@@ -15,17 +15,14 @@
     <h1 class="h3 mb-3 font-weight-normal">ログインフォーム</h1>
     @if ($errors->any())
       <div class="alert alert-danger">
+        @foreach ($errors->all() as $error)
           <ul>
-              @foreach ($errors->all() as $error)
-                  <li>{{ $error }}</li>
-              @endforeach
-              
-              @if (session('login_error'))
-                <div class="alert alert-danger">
-                  {{ session('login_error') }}
-                </div>
-              @endif
+            <li>{{ $error }}</li>
           </ul>
+        @endforeach
+              
+        <x-alert type="danger" :session="session('danger')"/>
+
       </div>
     @endif
     <label for="inputEmail" class="sr-only">Email address</label>
