@@ -11,6 +11,10 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    public function __construct(User $user)
+    {
+        $this->user = $user;
+    }
     public function login_show(): View
     {
         return view('login.login_form');
@@ -20,10 +24,10 @@ class AuthController extends Controller
     {
         $creadentials = $request->only('email', 'password');
 
-        $user = User::where('email', '=', $creadentials['email'])->first();
+        $user = $this->user->getUserByEmail($creadentials['email']);
 
         if(!is_null($user)) {
-            if ($user->locked_flg === 1) {
+            if ($this->user->isAccountLocked($user)) {
                 return back()->withErrors([
                     'danger' => 'アカウントがロックされています。',
                 ]);
@@ -31,19 +35,13 @@ class AuthController extends Controller
 
             if (Auth::attempt($creadentials)) {
                 $request->session()->regenerate();
-                if ($user->error_count > 0) {
-                    $user->error_count = 0;
-                    $user->save();
-                }
+                $this->user->resetErrorCount($user);
 
                 return redirect()->route('home')->with('success', 'ログイン成功しました！');
             }
             
-            $user->error_count = $user->error_count + 1;
-            if ($user->error_count > 5) {
-                $user->locked_flg = 1;
-                $user->save();
-
+            $user->error_count = $this->user->addErrorCount($user->error_count);
+            if ($this->user->lockAccount($user)) {
                 return back()->withErrors([
                     'danger' => 'アカウントがロックされました。',
                 ]);    
